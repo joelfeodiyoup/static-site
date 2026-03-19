@@ -8,5 +8,85 @@
   <body>
     <p>static site</p>
     <p>second paragraph</p>
+    <p
+      id="headingDisplay"
+      style="font-size: 2rem; font-weight: bold; margin-top: 1rem"
+    >
+      Heading: --°
+    </p>
+    <p id="status" style="color: #555">Waiting for orientation data...</p>
+    <script>
+      function normalizeHeading(heading) {
+        let h = heading % 360;
+        if (h < 0) h += 360;
+        return Math.round(h);
+      }
+
+      function showHeading(value) {
+        const display = document.getElementById("headingDisplay");
+        const status = document.getElementById("status");
+        display.textContent = `Heading: ${value}°`;
+        status.textContent = "Orientation active";
+      }
+
+      function onOrientation(event) {
+        let heading = null;
+
+        if (event.absolute === true || event.absolute === undefined) {
+          // absolute or non-specified
+          if (typeof event.alpha === "number") {
+            heading = event.alpha;
+          }
+        }
+
+        if (
+          heading === null &&
+          typeof event.webkitCompassHeading === "number"
+        ) {
+          // iOS fallback
+          heading = event.webkitCompassHeading;
+        }
+
+        if (heading !== null) {
+          showHeading(normalizeHeading(heading));
+        }
+      }
+
+      function setupOrientationListener() {
+        window.addEventListener(
+          "deviceorientationabsolute",
+          onOrientation,
+          true,
+        );
+        window.addEventListener("deviceorientation", onOrientation, true);
+      }
+
+      function requestPermissionIfNeeded() {
+        if (
+          typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function"
+        ) {
+          DeviceOrientationEvent.requestPermission()
+            .then((permissionState) => {
+              if (permissionState === "granted") {
+                document.getElementById("status").textContent =
+                  "Permission granted. Waiting for data...";
+                setupOrientationListener();
+              } else {
+                document.getElementById("status").textContent =
+                  "Permission denied. Enable motion/orientation permissions in browser settings.";
+              }
+            })
+            .catch(() => {
+              document.getElementById("status").textContent =
+                "Permission request failed. Try reloading and allow motion/orientation.";
+            });
+        } else {
+          setupOrientationListener();
+        }
+      }
+
+      requestPermissionIfNeeded();
+    </script>
   </body>
 </html>
